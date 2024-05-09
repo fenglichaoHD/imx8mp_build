@@ -1,0 +1,93 @@
+From d37969d4d632835d18989da438ac8465598c11bb Mon Sep 17 00:00:00 2001
+From: fenglichaoHD <864894787@qq.com>
+Date: Thu, 9 May 2024 08:13:28 +0800
+Subject: [PATCH] fix usdhc2 vccm
+
+---
+ .../boot/dts/freescale/imx8mp-cubox-m.dts     | 48 +++++++++++++------
+ 1 file changed, 33 insertions(+), 15 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cubox-m.dts b/arch/arm64/boot/dts/freescale/imx8mp-cubox-m.dts
+index f7adc5c8a..e9a9ced7b 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mp-cubox-m.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mp-cubox-m.dts
+@@ -25,16 +25,28 @@ ir_recv: ir-receiver {
+ 		wakeup-source;
+ 	};
+ 
+-	leds {
+-		compatible = "gpio-leds";
++	// leds {
++	// 	compatible = "gpio-leds";
++	// 	pinctrl-names = "default";
++	// 	pinctrl-0 = <&pinctrl_gpio_led>;
++
++	// 	status {
++	// 		label = "status";
++	// 		gpios = <&gpio2 19 GPIO_ACTIVE_LOW>;
++	// 		default-state = "on";
++	// 	};
++	// };
++
++	reg_usdhc2_vmmc: regulator-usdhc2 {
++		compatible = "regulator-fixed";
+ 		pinctrl-names = "default";
+-		pinctrl-0 = <&pinctrl_gpio_led>;
+-
+-		status {
+-			label = "status";
+-			gpios = <&gpio2 19 GPIO_ACTIVE_LOW>;
+-			default-state = "on";
+-		};
++		pinctrl-0 = <&pinctrl_reg_usdhc2_vmmc>;
++		regulator-name = "VSD_3V3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-always-on;
+ 	};
+ 
+ 	power-usb-ports {
+@@ -193,7 +205,7 @@ &usdhc2 {
+ 	pinctrl-1 = <&pinctrl_usdhc2_100mhz>, <&pinctrl_usdhc2_gpio>;
+ 	pinctrl-2 = <&pinctrl_usdhc2_200mhz>, <&pinctrl_usdhc2_gpio>;
+ 	cd-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
+-	vmmc-supply = <&buck4>;
++	vmmc-supply = <&reg_usdhc2_vmmc>;
+ 	voltage-ranges = <1800 1800 3300 3300>;
+ 	bus-width = <4>;
+ 	status = "okay";
+@@ -212,11 +224,11 @@ MX8MP_IOMUXC_HDMI_CEC__HDMIMIX_HDMI_CEC		0x40000019
+ 		>;
+ 	};
+ 
+-	pinctrl_gpio_led: gpioledgrp {
+-		fsl,pins = <
+-			MX8MP_IOMUXC_SD2_RESET_B__GPIO2_IO19	    0x40
+-		>;
+-	};
++	// pinctrl_gpio_led: gpioledgrp {
++	// 	fsl,pins = <
++	// 		MX8MP_IOMUXC_SD2_RESET_B__GPIO2_IO19	    0x40
++	// 	>;
++	// };
+ 
+ 	pinctrl_i2c3: i2c3grp {
+ 		fsl,pins = <
+@@ -256,6 +268,12 @@ MX8MP_IOMUXC_GPIO1_IO07__GPIO1_IO07	0x19
+ 		>;
+ 	};
+ 
++	pinctrl_reg_usdhc2_vmmc: regusdhc2vmmcgrp {
++		fsl,pins = <
++			MX8MP_IOMUXC_SD2_RESET_B__GPIO2_IO19	0x40
++		>;
++	};
++
+ 	pinctrl_usdhc2: usdhc2grp {
+ 		fsl,pins = <
+ 			MX8MP_IOMUXC_SD2_CLK__USDHC2_CLK	0x190
+-- 
+2.25.1
+

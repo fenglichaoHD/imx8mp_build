@@ -6,10 +6,10 @@ set -e
 ###############################################################################
 
 declare -A GIT_REL
-GIT_REL[imx-atf]=lf_v2.6
+GIT_REL[imx-atf]=lf_v2.8
 GIT_REL[uboot-imx]=lf_v2022.04
-GIT_REL[linux-imx]=lf-5.15.y
-GIT_REL[imx-mkimage]=lf-6.1.1-1.0.0
+GIT_REL[linux-imx]=lf-6.1.y
+GIT_REL[imx-mkimage]=lf-6.6.3_1.0.0
 
 # Distribution for rootfs
 # - buildroot
@@ -17,7 +17,7 @@ GIT_REL[imx-mkimage]=lf-6.1.1-1.0.0
 : ${DISTRO:=buildroot}
 
 ## Buildroot Options
-: ${BUILDROOT_VERSION:=2023.11}
+: ${BUILDROOT_VERSION:=2024.02.x}
 : ${BUILDROOT_DEFCONFIG:=buildroot_defconfig}
 : ${BUILDROOT_ROOTFS_SIZE:=512M}
 ## Debian Options
@@ -27,7 +27,7 @@ GIT_REL[imx-mkimage]=lf-6.1.1-1.0.0
 : ${HOST_NAME:=imx8mp}
 ## Kernel Options:
 : ${INCLUDE_KERNEL_MODULES:=true}
-: ${LINUX_DEFCONFIG:=imx_v8_defconfig}
+: ${LINUX_DEFCONFIG:=imx8_var_defconfig}
 
 #UBOOT_ENVIRONMENT -
 # - spi (SPI FLash)
@@ -86,17 +86,21 @@ for i in $COMPONENTS; do
 		cd $ROOTDIR/build/
 
 		CHECKOUT=${GIT_REL["$i"]}
-		git clone ${SHALLOW_FLAG} https://github.com/nxp-imx/$i -b $CHECKOUT
-		cd $i
-		if [[ -d $ROOTDIR/patches/$i/ ]]; then
-			git am $ROOTDIR/patches/$i/*.patch
+		if [ $i == "linux-imx" ]; then
+			git clone ${SHALLOW_FLAG} https://github.com/fenglichaoHD/linux-imx.git -b lf-6.1.y
+		else
+			git clone ${SHALLOW_FLAG} https://github.com/nxp-imx/$i -b $CHECKOUT
 		fi
+		#cd $i
+		#if [[ -d $ROOTDIR/patches/$i/ ]]; then
+		#	git am $ROOTDIR/patches/$i/*.patch
+		#fi
 	fi
 done
 
 if [[ ! -d $ROOTDIR/build/mfgtools ]]; then
 	cd $ROOTDIR/build
-	git clone https://github.com/NXPmicro/mfgtools.git -b uuu_1.4.77
+	git clone https://github.com/NXPmicro/mfgtools.git -b master
 	cd mfgtools
 	git am ../../patches/mfgtools/*.patch
 	cmake .
@@ -164,6 +168,10 @@ echo "================================="
 echo "*** Building Linux kernel..."
 echo "================================="
 cd $ROOTDIR/build/linux-imx
+git reset --hard
+if [[ -d $ROOTDIR/patches/linux-imx/ ]]; then
+	git am $ROOTDIR/patches/linux-imx/*.patch
+fi
 make $LINUX_DEFCONFIG
 ./scripts/kconfig/merge_config.sh .config $ROOTDIR/configs/kernel.extra
 # make menuconfig

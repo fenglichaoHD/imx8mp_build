@@ -86,21 +86,17 @@ for i in $COMPONENTS; do
 		cd $ROOTDIR/build/
 
 		CHECKOUT=${GIT_REL["$i"]}
-		if [ $i == "linux-imx" ]; then
-			git clone ${SHALLOW_FLAG} https://github.com/fenglichaoHD/linux-imx.git -b lf-6.1.y
-		else
-			git clone ${SHALLOW_FLAG} https://github.com/nxp-imx/$i -b $CHECKOUT
+		git clone ${SHALLOW_FLAG} https://github.com/fenglichaoHD/$i -b $CHECKOUT
+		cd $i
+		if [[ -d $ROOTDIR/patches/$i/ ]]; then
+			git am $ROOTDIR/patches/$i/*.patch
 		fi
-		#cd $i
-		#if [[ -d $ROOTDIR/patches/$i/ ]]; then
-		#	git am $ROOTDIR/patches/$i/*.patch
-		#fi
 	fi
 done
 
 if [[ ! -d $ROOTDIR/build/mfgtools ]]; then
 	cd $ROOTDIR/build
-	git clone https://github.com/NXPmicro/mfgtools.git -b master
+	git clone https://github.com/fenglichaoHD/mfgtools.git -b master
 	cd mfgtools
 	git am ../../patches/mfgtools/*.patch
 	cmake .
@@ -111,13 +107,13 @@ if [[ ! -d $ROOTDIR/build/firmware ]]; then
 	cd $ROOTDIR/build/
 	mkdir -p firmware
 	cd firmware
-	wget https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/firmware-imx-8.10.bin
+	wget https://github.com/fenglichaoHD/firmware-imx/releases/download/v0.1/firmware-imx-8.10.bin
 	bash firmware-imx-8.10.bin --auto-accept
 fi
 
 if [[ ! -d $ROOTDIR/build/buildroot ]]; then
 	cd $ROOTDIR/build
-	git clone ${SHALLOW_FLAG} https://github.com/buildroot/buildroot -b $BUILDROOT_VERSION
+	git clone ${SHALLOW_FLAG} https://github.com/fenglichaoHD/buildroot.git -b $BUILDROOT_VERSION
 fi
 
 # Copy firmware
@@ -168,10 +164,6 @@ echo "================================="
 echo "*** Building Linux kernel..."
 echo "================================="
 cd $ROOTDIR/build/linux-imx
-git reset --hard
-if [[ -d $ROOTDIR/patches/linux-imx/ ]]; then
-	git am $ROOTDIR/patches/linux-imx/*.patch
-fi
 make $LINUX_DEFCONFIG
 ./scripts/kconfig/merge_config.sh .config $ROOTDIR/configs/kernel.extra
 # make menuconfig
